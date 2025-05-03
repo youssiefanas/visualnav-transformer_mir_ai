@@ -35,11 +35,11 @@ The codebase assumes access to a workstation running Ubuntu (tested on 18.04 and
 Run the commands below inside the `vint_release/` (topmost) directory:
 1. Set up the conda environment:
     ```bash
-    conda env create -f train/train_environment.yml
+    conda env create -f nomad_env.yml
     ```
 2. Source the conda environment:
     ```
-    conda activate vint_train
+    conda activate nomad_env
     ```
 3. Install the vint_train packages:
     ```bash
@@ -50,7 +50,6 @@ Run the commands below inside the `vint_release/` (topmost) directory:
     git clone git@github.com:real-stanford/diffusion_policy.git
     pip install -e diffusion_policy/
     ```
-
 
 ### Data-Wrangling
 In the [papers](https://general-navigation-models.github.io), we train on a combination of publicly available and unreleased datasets. Below is a list of publicly available datasets used for training; please contact the respective authors for access to the unreleased data.
