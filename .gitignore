@@ -16,10 +16,10 @@ go_stanford.zip
 go_stanford/
 track0/
 
-!/train/vint_train/data/custom_data/test/traj_names.txt
-!/train/vint_train/data/custom_data/train/traj_names.txt
-!visualnav-transformer/train/vint_train/data/my_dataset/train/traj_names.txt
-!visualnav-transformer/train/vint_train/data/my_dataset/test/traj_names.txt
+!train/vint_train/data/custom_data/test/traj_names.txt
+!train/vint_train/data/custom_data/train/traj_names.txt
+!train/vint_train/data/my_dataset/train/traj_names.txt
+!train/vint_train/data/my_dataset/test/traj_names.txt
 
 *.png
 *.jpg
