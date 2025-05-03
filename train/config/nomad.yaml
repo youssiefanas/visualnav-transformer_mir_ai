@@ -63,9 +63,9 @@ learn_angle: False
 image_size: [96, 96] # width, height
 datasets:
   SeaFloor_Algae:
-    data_folder: /home/mundus/ymorsy172/visualnav-transformer/SeaFloor_Algae # datasets/stanford_go_new
-    train: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/custom_data/train/
-    test: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/custom_data/test/
+    data_folder: /projects/mir/nomad_dataset/SeaFloor_Algae # datasets/stanford_go_new
+    train: vint_train/data/custom_data/train/
+    test: vint_train/data/custom_data/test/
     end_slack: 0
     goals_per_obs: 1 # increase dataset size
     negative_mining: True
