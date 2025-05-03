@@ -1,9 +1,20 @@
+
 train/logs/*
 train/datasets/*
 train/vint_train/data/data_splits/*
 train/wandb/*
 train/gnm_dataset/*
 *_test.yaml
+train/vint_train/data/custom_data
+train/vint_train/data/my_dataset
+
+SeaFloor_Algae/
+custom_data.csv
+data_naming.py
+diffusion_policy/
+go_stanford.zip
+go_stanford/
+track0/
 
 *.png
 *.jpg
