@@ -57,10 +57,12 @@ def main(config):
     device = torch.device(
         f"cuda:{first_gpu_id}" if torch.cuda.is_available() else "cpu"
     )
-
+    
     if "seed" in config:
         np.random.seed(config["seed"])
         torch.manual_seed(config["seed"])
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(config["seed"])  # For multi-GPU
         cudnn.deterministic = True
 
     cudnn.benchmark = True  # good if input sizes don't vary
@@ -290,8 +292,9 @@ def main(config):
             current_epoch = latest_checkpoint["epoch"] + 1
 
     # Multi-GPU
-    if len(config["gpu_ids"]) > 1:
-        model = nn.DataParallel(model, device_ids=config["gpu_ids"])
+
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
     model = model.to(device)
 
     if "load_run" in config:  # load optimizer and scheduler after data parallel
@@ -390,7 +393,7 @@ if __name__ == "__main__":
         wandb.init(
             project=config["project_name"],
             settings=wandb.Settings(start_method="fork"),
-            entity="gnmv2", # TODO: change this to your wandb entity
+            entity="youssiefanas", # TODO: change this to your wandb entity
         )
         wandb.save(args.config, policy="now")  # save the config file
         wandb.run.name = config["run_name"]

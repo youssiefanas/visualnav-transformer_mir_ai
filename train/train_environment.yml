@@ -1,9 +1,10 @@
-name: nomad_train
+name: nomad_update
+
 channels:
 - defaults
 - pytorch
 dependencies:
-- python=3.8.5
+- python=3.9
 - cudatoolkit=10.
 - numpy
 - matplotlib

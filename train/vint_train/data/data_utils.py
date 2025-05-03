@@ -25,7 +25,8 @@ def get_data_path(data_folder: str, f: str, time: int, data_type: str = "image")
     return os.path.join(data_folder, f, f"{str(time)}{data_ext[data_type]}")
 
 
-def yaw_rotmat(yaw: float) -> np.ndarray:
+def yaw_rotmat(yaw: Union[float, np.ndarray]) -> np.ndarray:
+    yaw = float(yaw) if isinstance(yaw, (np.ndarray, list)) else yaw
     return np.array(
         [
             [np.cos(yaw), -np.sin(yaw), 0.0],
@@ -70,7 +71,7 @@ def calculate_deltas(waypoints: torch.Tensor) -> torch.Tensor:
     """
     num_params = waypoints.shape[1]
     origin = torch.zeros(1, num_params)
-    prev_waypoints = torch.concat((origin, waypoints[:-1]), axis=0)
+    prev_waypoints = torch.cat((origin, waypoints[:-1]), dim=0)
     deltas = waypoints - prev_waypoints
     if num_params > 2:
         return calculate_sin_cos(deltas)
@@ -90,7 +91,7 @@ def calculate_sin_cos(waypoints: torch.Tensor) -> torch.Tensor:
     angle_repr = torch.zeros_like(waypoints[:, :2])
     angle_repr[:, 0] = torch.cos(waypoints[:, 2])
     angle_repr[:, 1] = torch.sin(waypoints[:, 2])
-    return torch.concat((waypoints[:, :2], angle_repr), axis=1)
+    return torch.cat((waypoints[:, :2], angle_repr), dim=1)
 
 
 def transform_images(

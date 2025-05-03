@@ -14,6 +14,7 @@ from vint_train.training.logger import Logger
 from vint_train.data.data_utils import VISUALIZATION_IMAGE_SIZE
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
 from diffusers.training_utils import EMAModel
+import copy 
 
 import torch
 import torch.nn as nn
@@ -672,8 +673,9 @@ def train_nomad(
 
 
             if i % print_log_freq == 0:
+                ema_model.copy_to(model.parameters())
                 losses = _compute_losses_nomad(
-                            ema_model.averaged_model,
+                            model,
                             noise_scheduler,
                             batch_obs_images,
                             batch_goal_images,
@@ -698,8 +700,9 @@ def train_nomad(
                     wandb.log(data_log, commit=True)
 
             if image_log_freq != 0 and i % image_log_freq == 0:
+                ema_model.copy_to(model.parameters())
                 visualize_diffusion_action_distribution(
-                    ema_model.averaged_model,
+                    model, 
                     noise_scheduler,
                     batch_obs_images,
                     batch_goal_images,
@@ -720,6 +723,7 @@ def train_nomad(
 
 def evaluate_nomad(
     eval_type: str,
+    model: nn.Module,
     ema_model: EMAModel,
     dataloader: DataLoader,
     transform: transforms,
@@ -756,8 +760,8 @@ def evaluate_nomad(
         use_wandb (bool): whether to use wandb for logging
     """
     goal_mask_prob = torch.clip(torch.tensor(goal_mask_prob), 0, 1)
-    ema_model = ema_model.averaged_model
-    ema_model.eval()
+    ema_model.copy_to(model.parameters())
+    model.eval()
     
     num_batches = len(dataloader)
 
@@ -787,22 +791,23 @@ def evaluate_nomad(
     }
     num_batches = max(int(num_batches * eval_fraction), 1)
 
-    with tqdm.tqdm(
-        itertools.islice(dataloader, num_batches), 
-        total=num_batches, 
-        dynamic_ncols=True, 
-        desc=f"Evaluating {eval_type} for epoch {epoch}", 
-        leave=False) as tepoch:
-        for i, data in enumerate(tepoch):
-            (
-                obs_image, 
-                goal_image,
-                actions,
-                distance,
-                goal_pos,
-                dataset_idx,
-                action_mask,
-            ) = data
+    with torch.no_grad():
+        with tqdm.tqdm(
+            itertools.islice(dataloader, num_batches), 
+            total=num_batches, 
+            dynamic_ncols=True, 
+            desc=f"Evaluating {eval_type} for epoch {epoch}", 
+            leave=False) as tepoch:
+            for i, data in enumerate(tepoch):
+                (
+                    obs_image, 
+                    goal_image,
+                    actions,
+                    distance,
+                    goal_pos,
+                    dataset_idx,
+                    action_mask,
+                ) = data
             
             obs_images = torch.split(obs_image, 3, dim=1)
             batch_viz_obs_images = TF.resize(obs_images[-1], VISUALIZATION_IMAGE_SIZE[::-1])
@@ -819,12 +824,12 @@ def evaluate_nomad(
             goal_mask = torch.ones_like(rand_goal_mask).long().to(device)
             no_mask = torch.zeros_like(rand_goal_mask).long().to(device)
 
-            rand_mask_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=rand_goal_mask)
+            rand_mask_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=rand_goal_mask)
 
-            obsgoal_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=no_mask)
+            obsgoal_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=no_mask)
             obsgoal_cond = obsgoal_cond.flatten(start_dim=1)
 
-            goal_mask_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
+            goal_mask_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
 
             distance = distance.to(device)
 
@@ -847,21 +852,21 @@ def evaluate_nomad(
 
             ### RANDOM MASK ERROR ###
             # Predict the noise residual
-            rand_mask_noise_pred = ema_model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=rand_mask_cond)
+            rand_mask_noise_pred = model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=rand_mask_cond)
             
             # L2 loss
             rand_mask_loss = nn.functional.mse_loss(rand_mask_noise_pred, noise)
             
             ### NO MASK ERROR ###
             # Predict the noise residual
-            no_mask_noise_pred = ema_model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=obsgoal_cond)
+            no_mask_noise_pred = model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=obsgoal_cond)
             
             # L2 loss
             no_mask_loss = nn.functional.mse_loss(no_mask_noise_pred, noise)
 
             ### GOAL MASK ERROR ###
             # predict the noise residual
-            goal_mask_noise_pred = ema_model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=goal_mask_cond)
+            goal_mask_noise_pred = model("noise_pred_net", sample=noisy_actions, timestep=timesteps, global_cond=goal_mask_cond)
             
             # L2 loss
             goal_mask_loss = nn.functional.mse_loss(goal_mask_noise_pred, noise)

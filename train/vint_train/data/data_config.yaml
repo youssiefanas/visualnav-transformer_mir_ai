@@ -14,10 +14,10 @@ recon:
     camera_height: 0.95 # meters
     camera_x_offset: 0.45 # distance between the center of the robot and the forward facing camera
     camera_matrix:
-      fx: 272.547000
-      fy: 266.358000
-      cx: 320.000000
-      cy: 220.000000
+      fx: 252.547000
+      fy: 252.358000
+      cx: 360.000000
+      cy: 270.000000
     dist_coeffs:
       k1: -0.038483
       k2: -0.010456
@@ -33,6 +33,9 @@ tartan_drive:
 
 go_stanford:
   metric_waypoint_spacing: 0.12
+
+SeaFloor_Algae:
+  metric_waypoint_spacing: 0.03
 
 # private datasets:
 cory_hall:

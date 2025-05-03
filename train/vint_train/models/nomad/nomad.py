@@ -5,7 +5,7 @@ import pdb
 
 import torch
 import torch.nn as nn
-
+torch.cuda.empty_cache()
 
 class NoMaD(nn.Module):
 

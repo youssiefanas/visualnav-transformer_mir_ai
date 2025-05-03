@@ -69,6 +69,7 @@ def train_eval_loop(
 
     for epoch in range(current_epoch, current_epoch + epochs):
         if train_model:
+            torch.cuda.empty_cache()
             print(
             f"Start ViNT Training Epoch {epoch}/{current_epoch + epochs - 1}"
             )
@@ -193,7 +194,7 @@ def train_eval_loop_nomad(
         eval_freq: frequency of evaluation
     """
     latest_path = os.path.join(project_folder, f"latest.pth")
-    ema_model = EMAModel(model=model,power=0.75)
+    ema_model = EMAModel(parameters=model.parameters(),model=model,power=0.75)
     
     for epoch in range(current_epoch, current_epoch + epochs):
         if train_model:
@@ -221,7 +222,10 @@ def train_eval_loop_nomad(
             lr_scheduler.step()
 
         numbered_path = os.path.join(project_folder, f"ema_{epoch}.pth")
-        torch.save(ema_model.averaged_model.state_dict(), numbered_path)
+        # Temporarily apply EMA weights to main model
+        ema_model.copy_to(model.parameters())
+        # Save the main model (now with EMA weights)
+        torch.save(model.state_dict(), numbered_path)
         numbered_path = os.path.join(project_folder, f"ema_latest.pth")
         print(f"Saved EMA model to {numbered_path}")
 
@@ -242,13 +246,16 @@ def train_eval_loop_nomad(
 
 
         if (epoch + 1) % eval_freq == 0: 
+            torch.cuda.empty_cache()  # Add right before evaluate_nomad() call
             for dataset_type in test_dataloaders:
                 print(
                     f"Start {dataset_type} ViNT DP Testing Epoch {epoch}/{current_epoch + epochs - 1}"
                 )
                 loader = test_dataloaders[dataset_type]
+                torch.cuda.empty_cache()
                 evaluate_nomad(
                     eval_type=dataset_type,
+                    model = model,
                     ema_model=ema_model,
                     dataloader=loader,
                     transform=transform,
