@@ -140,71 +140,32 @@ class ViNT_Dataset(Dataset):
             self.data_split_folder,
             f"dataset_{self.dataset_name}.lmdb",
         )
-            # Double the map size to ensure enough space
-        map_size = 2**40  # 1TB
 
-        # Always rebuild the cache to ensure completeness
-        with lmdb.open(cache_filename, map_size=map_size) as env:
-            with env.begin(write=True) as txn:
-                # Clear existing database
-                txn.drop(env.open_db())
-                
-                # Use a progress bar
-                tqdm_iterator = tqdm.tqdm(
-                    self.goals_index,
-                    disable=not use_tqdm,
-                    dynamic_ncols=True,
-                    desc=f"Building LMDB cache for {self.dataset_name}"
-                )
-                
-                # Track missing files
-                missing_files = []
-                
-                for traj_name, time in tqdm_iterator:
-                    image_path = os.path.join(self.data_folder, traj_name, f"{time}.jpg")
-                    cache_key = f"{traj_name}_{time}".encode()  # More consistent key format
-                    
-                    if os.path.exists(image_path):
-                        try:
-                            with open(image_path, "rb") as f:
-                                image_data = f.read()
-                            txn.put(cache_key, image_data)
-                        except Exception as e:
-                            print(f"Error caching {image_path}: {str(e)}")
-                            missing_files.append(image_path)
-                    else:
-                        missing_files.append(image_path)
-                
-                if missing_files:
-                    print(f"\nWarning: {len(missing_files)} images missing on disk")
-                    with open(os.path.join(self.data_split_folder, "missing_images.txt"), "w") as f:
-                        f.write("\n".join(missing_files))
+        # Load all the trajectories into memory. These should already be loaded, but just in case.
+        for traj_name in self.traj_names:
+            self._get_trajectory(traj_name)
 
-        # Reopen in read-only mode
-        self._image_cache = lmdb.open(cache_filename, readonly=True, max_readers=126)
-        # # Load all the trajectories into memory. These should already be loaded, but just in case.
-        # for traj_name in self.traj_names:
-        #     self._get_trajectory(traj_name)
+        """
+        If the cache file doesn't exist, create it by iterating through the dataset and writing each image to the cache
+        """
+        if not os.path.exists(cache_filename):
+            tqdm_iterator = tqdm.tqdm(
+                self.goals_index,
+                disable=not use_tqdm,
+                dynamic_ncols=True,
+                desc=f"Building LMDB cache for {self.dataset_name}"
+            )
+            with lmdb.open(cache_filename, map_size=2**40) as image_cache:
+                with image_cache.begin(write=True) as txn:
+                    for traj_name, time in tqdm_iterator:
+                        image_path = get_data_path(self.data_folder, traj_name, time)
+                        print(f"[DEBUG] Writing key to LMDB: {image_path.encode()}")
+                        with open(image_path, "rb") as f:
+                            txn.put(image_path.encode(), f.read())
 
-        # """
-        # If the cache file doesn't exist, create it by iterating through the dataset and writing each image to the cache
-        # """
-        # if not os.path.exists(cache_filename):
-        #     tqdm_iterator = tqdm.tqdm(
-        #         self.goals_index,
-        #         disable=not use_tqdm,
-        #         dynamic_ncols=True,
-        #         desc=f"Building LMDB cache for {self.dataset_name}"
-        #     )
-        #     with lmdb.open(cache_filename, map_size=2**40) as image_cache:
-        #         with image_cache.begin(write=True) as txn:
-        #             for traj_name, time in tqdm_iterator:
-        #                 image_path = get_data_path(self.data_folder, traj_name, time)
-        #                 with open(image_path, "rb") as f:
-        #                     txn.put(image_path.encode(), f.read())
+        # Reopen the cache file in read-only mode
+        self._image_cache: lmdb.Environment = lmdb.open(cache_filename, readonly=True)
 
-        # # Reopen the cache file in read-only mode
-        # self._image_cache: lmdb.Environment = lmdb.open(cache_filename, readonly=True)
 
     def _build_index(self, use_tqdm: bool = False):
         """
@@ -212,9 +173,9 @@ class ViNT_Dataset(Dataset):
         """
         samples_index = []
         goals_index = []
-
         for traj_name in tqdm.tqdm(self.traj_names, disable=not use_tqdm, dynamic_ncols=True):
             traj_data = self._get_trajectory(traj_name)
+            # print("DEBUG traj_data.columns:", traj_data.columns)
             traj_len = len(traj_data["position"])
 
             for goal_time in range(0, traj_len):
@@ -271,11 +232,22 @@ class ViNT_Dataset(Dataset):
         try:
             with self._image_cache.begin() as txn:
                 image_buffer = txn.get(image_path.encode())
+                # print(f"[DEBUG] Reading key from LMDB: {image_path.encode()}")  # Inside _load_image
+
+                if image_buffer is None:
+                    print(f"[WARNING] Image not found in cache: {image_path}")
+                    return None
+
                 image_bytes = bytes(image_buffer)
-            image_bytes = io.BytesIO(image_bytes)
-            return img_path_to_data(image_bytes, self.image_size)
-        except TypeError:
-            print(f"Failed to load image {image_path}")
+                image_bytes = io.BytesIO(image_bytes)
+
+                return img_path_to_data(image_bytes, self.image_size)
+
+        except TypeError as e:
+            print(f"[ERROR] TypeError while loading image {image_path}: {e}")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error while loading image {image_path}: {e}")
+
 
     def _compute_actions(self, traj_data, curr_time, goal_time):
         start_index = curr_time

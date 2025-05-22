@@ -880,8 +880,9 @@ def evaluate_nomad(
             wandb.log({"diffusion_eval_loss (goal masking)": goal_mask_loss})
 
             if i % print_log_freq == 0 and print_log_freq != 0:
+                ema_model.copy_to(model.parameters())
                 losses = _compute_losses_nomad(
-                            ema_model,
+                            model,
                             noise_scheduler,
                             batch_obs_images,
                             batch_goal_images,
@@ -907,7 +908,7 @@ def evaluate_nomad(
 
             if image_log_freq != 0 and i % image_log_freq == 0:
                 visualize_diffusion_action_distribution(
-                    ema_model,
+                    model,
                     noise_scheduler,
                     batch_obs_images,
                     batch_goal_images,

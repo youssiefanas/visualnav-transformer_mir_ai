@@ -28,11 +28,17 @@ recon:
 scand:
   metric_waypoint_spacing: 0.38
 
+stacked_dataset: 
+  metric_waypoint_spacing: 0.03
+
 tartan_drive:
   metric_waypoint_spacing: 0.72
 
 go_stanford:
   metric_waypoint_spacing: 0.12
+
+combined_data:
+  metric_waypoint_spacing: 0.03
 
 SeaFloor_Algae:
   metric_waypoint_spacing: 0.03

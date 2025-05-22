@@ -5,8 +5,8 @@ load_run: nomad/fine_tune
 # training setup
 use_wandb: True # set to false if you don't want to log to wandb
 train: True
-batch_size: 4
-epochs: 10
+batch_size: 128
+epochs: 100
 gpu_ids: [0]
 num_workers: 12
 lr: 1e-4
@@ -62,13 +62,29 @@ learn_angle: False
 # dataset specific parameters
 image_size: [96, 96] # width, height
 datasets:
-  SeaFloor_Algae:
-    data_folder: /projects/mir/nomad_dataset/SeaFloor_Algae # datasets/stanford_go_new
-    train: vint_train/data/custom_data/train/
-    test: vint_train/data/custom_data/test/
+  stacked_dataset:
+    data_folder:  /projects/mir/nomad/stacked_dataset  
+    train: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/stacked_dataset/train/
+    test: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/stacked_dataset/test/
     end_slack: 0
     goals_per_obs: 1 # increase dataset size
     negative_mining: True
+
+  # combined_data:
+  #   data_folder: /home/mundus/ymorsy172/visualnav-transformer/combined_data 
+  #   train: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/combined_data/train/
+  #   test: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/combined_data/test/
+  #   end_slack: 0
+  #   goals_per_obs: 1 # increase dataset size
+  #   negative_mining: True
+
+  # SeaFloor_Algae:
+  #   data_folder: /home/mundus/ymorsy172/visualnav-transformer/SeaFloor_Algae # datasets/stanford_go_new
+  #   train: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/custom_data/train/
+  #   test: /home/mundus/ymorsy172/visualnav-transformer/train/vint_train/data/custom_data/test/
+  #   end_slack: 0
+  #   goals_per_obs: 1 # increase dataset size
+  #   negative_mining: True
   # recon:
   #   data_folder: /home/<username>/nomad_dataset/recon
   #   train: /home/<username>/data_splits/recon/train/ # path to train folder with traj_names.txt

@@ -3,7 +3,7 @@
 #SBATCH --partition=mundus,besteffort,all
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:a100-20:1               #a100-40:1 - a40-48:1 -  l40-48:1     
+#SBATCH --gres=gpu:a100-40:1           #a100-40:1 - a40-48:1 -  l40-48:1     
 #SBATCH --cpus-per-task=24             # 16 CPUs per task (1/4 of total)
 #SBATCH --mem=32G                      # 64GB RAM
 #SBATCH --time=24:00:00                # 24 hour time limit
