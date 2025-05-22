@@ -64,7 +64,10 @@ We recommend you to download these (and any other datasets you may want to train
 #### Data Processing 
 
 We provide some sample scripts to process these datasets, either directly from a rosbag or from a custom format like HDF5s:
-1. Run `process_bags.py` with the relevant args, or `process_recon.py` for processing RECON HDF5s. You can also manually add your own dataset by following our structure below (if you are adding a custom dataset, please checkout the [Custom Datasets](#custom-datasets) section).
+1. Prepare the data by running:
+   ```bash
+    python3 data_prep.py --parent_path /path/to/parent_folder --bag /path/to/rosbag_folder --tum /path/to/trajectory_file.tum
+    ```
 2. Run `data_split.py` on your dataset folder with the relevant args.
 
 After step 1 of data processing, the processed dataset should have the following structure:
@@ -105,7 +108,8 @@ After step 2 of data processing, the processed data-split should the following s
 |   |   └── traj_names.txt
 └── └── test
         └── traj_names.txt 
-``` 
+```
+
 
 ### Training your General Navigation Models
 Run this inside the `vint_release/train` directory:
