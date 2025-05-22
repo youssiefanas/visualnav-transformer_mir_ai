@@ -7,8 +7,9 @@ train/gnm_dataset/*
 *_test.yaml
 train/vint_train/data/custom_data/*
 train/vint_train/data/my_dataset
-
+logs/
 SeaFloor_Algae/
+SeaFloor_Algae_o/
 custom_data.csv
 data_naming.py
 diffusion_policy/
